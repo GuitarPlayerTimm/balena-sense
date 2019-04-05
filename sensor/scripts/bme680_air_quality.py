@@ -86,11 +86,14 @@ def get_readings(sensor):
         # Calculate air_quality_score.
         air_quality_score = hum_score + gas_score
 
+        # Calculate temperature in fahrenheit.
+        temperatureFahrenheit = (sensor.data.temperature * 1.8) + 32
+
         return [
             {
                 'measurement': 'balena-sense',
                 'fields': {
-                    'temperature': float(sensor.data.temperature),
+                    'temperature': float(temperatureFahrenheit),
                     'pressure': float(sensor.data.pressure),
                     'humidity': float(sensor.data.humidity),
                     'air_quality_score': float(air_quality_score)

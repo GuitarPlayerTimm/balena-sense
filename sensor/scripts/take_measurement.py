@@ -14,9 +14,9 @@ readfrom = 'unset'
 
 # First, check to see if there is a BME680 on the I2C bus
 try:
-    sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
+    sensor = bme680.BME680(0x77)
 except IOError:
-    print 'BME680 not found on 0x76'
+    print 'BME680 not found on 0x77'
 else:
     readfrom = 'bme680'
     print 'Using BME680 for readings'
