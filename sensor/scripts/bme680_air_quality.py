@@ -1,5 +1,6 @@
 # Approximate air quality reading
 # Adapted from: https://raw.githubusercontent.com/pimoroni/bme680-python/master/examples/indoor-air-quality.py
+
 def start_bme680(sensor):
     import bme680
     import time
@@ -26,7 +27,6 @@ def start_bme680(sensor):
 
     burn_in_data = []
 
-
     # Collect gas resistance burn-in values, then use the average
     # of the last 50 values to set the upper limit for calculating
     # gas_baseline.
@@ -45,8 +45,6 @@ def start_bme680(sensor):
 
     print('Burn-in complete!\n')
     return gas_baseline
-
-
 
 def get_readings(sensor):
     global gas_baseline
@@ -69,7 +67,6 @@ def get_readings(sensor):
             hum_score = (100 - hum_baseline - hum_offset)
             hum_score /= (100 - hum_baseline)
             hum_score *= (hum_weighting * 100)
-
         else:
             hum_score = (hum_baseline + hum_offset)
             hum_score /= hum_baseline
@@ -79,22 +76,24 @@ def get_readings(sensor):
         if gas_offset > 0:
             gas_score = (gas / gas_baseline)
             gas_score *= (100 - (hum_weighting * 100))
-
         else:
             gas_score = 100 - (hum_weighting * 100)
 
         # Calculate air_quality_score.
         air_quality_score = hum_score + gas_score
 
-        # Calculate temperature in fahrenheit.
+        # Calculate temperature from Celsius to Fahrenheit.
         temperatureFahrenheit = (sensor.data.temperature * 1.8) + 32
+
+        # Calculate pressure from hectoPascals to kiloPascals.
+        pressureKiloPascals = sensor.data.pressure / 10
 
         return [
             {
                 'measurement': 'balena-sense',
                 'fields': {
                     'temperature': float(temperatureFahrenheit),
-                    'pressure': float(sensor.data.pressure),
+                    'pressure': float(pressureKiloPascals),
                     'humidity': float(sensor.data.humidity),
                     'air_quality_score': float(air_quality_score)
                 }

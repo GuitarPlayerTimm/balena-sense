@@ -10,42 +10,50 @@ import time
 from sense_hat import SenseHat
 from influxdb import InfluxDBClient
 
-readfrom = 'unset'
+# The sensor to get the readings from, 'unset' if no sensor is found.
+readFrom = 'unset'
 
-# First, check to see if there is a BME680 on the I2C bus
+# First, check to see if there is a BME680 on the I2C Bus using the Primary Address
 try:
-    sensor = bme680.BME680(0x77)
+    sensor = bme680.BME680(bme680.I2C_ADDR_PRIMARY)
+    readFrom = 'bme680'
 except IOError:
-    print 'BME680 not found on 0x77'
-else:
-    readfrom = 'bme680'
-    print 'Using BME680 for readings'
-    # Import the bme680 methods and nitialise the bme680 burnin
+    print('BME680 not found on 0x76')
+
+# Second, if readFrom is still 'unset', check to see if there's a BME680 on the I2C Bus using the Secondary Address
+if readFrom == 'unset':
+    try:
+        sensor = bme680.BME680(bme680.I2C_ADDR_SECONDARY)
+        readFrom = 'bme680'
+    except IOError:
+        print('BME680 not found on 0x77')
+
+# Third, if readFrom is still 'unset', check to see if there's a Sense HAT
+if readFrom == 'unset':
+    try:
+        sensor = SenseHat()
+        readFrom = 'sense-hat'
+    except:
+        print('Sense HAT not found')
+
+if readFrom == 'bme680':
+    print('Using BME680 for readings')
+    # Import the BME680 methods and initialize the BME680 burnin
     import bme680_air_quality
     bme680_air_quality.start_bme680(sensor)
     get_readings = bme680_air_quality.get_readings
-
-# If no BME680, is there a Sense HAT?
-if readfrom == 'unset':
-    try:
-        sensor = SenseHat()
-    except:
-        print 'Sense HAT not found'
-    else:
-        readfrom = 'sense-hat'
-        print 'Using Sense HAT for readings (no gas measurements)'
-        # Import the sense hat methods
-        import sense_hat_air_quality
-        get_readings = sense_hat_air_quality.get_readings
-
-# If this is still unset, no sensors were found; quit!
-if readfrom == 'unset':
+elif readFrom == 'sense-hat':
+    print('Using Sense HAT for readings (no gas measurements)')
+    # Import the Sense HAT methods
+    import sense_hat_air_quality
+    get_readings = sense_hat_air_quality.get_readings
+else:
+    # If this is still unset, no sensors were found; quit!
     sys.exit()
 
 # Create the database client, connected to the influxdb container, and select/create the database
 influx_client = InfluxDBClient('influxdb', 8086, database='balena-sense')
 influx_client.create_database('balena-sense')
-
 
 while True:
     measurements = get_readings(sensor)
