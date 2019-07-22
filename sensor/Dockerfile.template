@@ -1,16 +1,25 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-python:build
+FROM balenalib/%%BALENA_MACHINE_NAME%%-python:3-build
 
-WORKDIR /tmp
-RUN git clone https://github.com/RPi-Distro/RTIMULib/ RTIMU
-WORKDIR /tmp/RTIMU/Linux/python
-RUN python ./setup.py build
-RUN python ./setup.py install
+ARG BSEC_FILENAME=BSEC_1.4.7.4_Generic_Release.zip
 
-RUN pip install smbus bme680 influxdb sense-hat
+RUN install_packages \
+        unzip
 
 WORKDIR /usr/src/app
+RUN git clone https://github.com/balena-io-playground/bsec_bme680_linux.git
+RUN wget https://ae-bst.resource.bosch.com/media/_tech/media/bsec/$BSEC_FILENAME
+RUN unzip -d bsec_bme680_linux/src $BSEC_FILENAME
+RUN echo $BSEC_FILENAME > version
 
+WORKDIR /usr/src/app/bsec_bme680_linux
+RUN chmod +x make.sh
+RUN ./make.sh
+
+RUN pip install smbus
+
+WORKDIR /usr/src/app
 COPY ./scripts ./scripts
-RUN chmod +x scripts/*.py
+COPY ./entry.sh /usr/src/app/
+RUN chmod +x /usr/src/app/entry.sh
 
-CMD /usr/src/app/scripts/take_measurement.py
+CMD ./entry.sh
